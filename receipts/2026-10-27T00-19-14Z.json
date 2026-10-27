@@ -1,0 +1,41 @@
+{
+  "captured_at_utc": "2026-10-27T00:18:23.386771+00:00",
+  "claim": "US research proxy only; not a complete mirror of ChatGPT Sites",
+  "collector": "independent-public-sources-v0.1",
+  "collector_exit_status": "completed_with_warnings",
+  "digest_sha256": "5288c6e6f2d1a41ce047336de5216e70eae35f138267286b771db80b44053732",
+  "omitted_panels": [
+    "SPX dealer gamma",
+    "dark-pool data",
+    "forecast narrative",
+    "ECB/Cboe/BoJ global decomposition (not yet migrated)"
+  ],
+  "schema": 1,
+  "sources": {
+    "rrp": {
+      "error": "The read operation timed out",
+      "observed_through": null,
+      "sha256": null,
+      "status": "FETCH_FAILED",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=RRPONTSYD"
+    },
+    "tga": {
+      "expected_through": "2026-10-23",
+      "latest_value": "982489",
+      "observed_through": "2026-10-23",
+      "sha256": "06f6ce6e91a80da7c4fcad47c7639278dfc7da913929558568229bf17758fede",
+      "status": "CURRENT",
+      "unit": "USD million",
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance?filter=account_type%3Aeq%3ATreasury+General+Account+%28TGA%29+Closing+Balance&fields=record_date%2Caccount_type%2Copen_today_bal&sort=-record_date&page%5Bsize%5D=100"
+    },
+    "walcl": {
+      "error": "The read operation timed out",
+      "observed_through": null,
+      "sha256": null,
+      "status": "FETCH_FAILED",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL"
+    }
+  },
+  "status": "FETCH_FAILED",
+  "us_net_liquidity_bn_last3": []
+}
