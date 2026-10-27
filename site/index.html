@@ -63,7 +63,9 @@ function renderTable(id,items,cols){const body=el(id);body.replaceChildren();for
   const ymd=p=>[p.year,String(p.month).padStart(2,'0'),String(p.day).padStart(2,'0')].join('-');
   const due=parts(new Date());
   const dueDate=new Date(Date.UTC(due.year,due.month-1,due.day));
-  if(due.hour<18 || [0,6].includes(dueDate.getUTCDay()))dueDate.setUTCDate(dueDate.getUTCDate()-1);
+  // Grace to 23:00 ET: GitHub starts scheduled runs late (about 2 h in liquidity-pipeline #7), so an 18:00 run
+  // is not counted as missed until 23:00 ET the same day.
+  if(due.hour<23 || [0,6].includes(dueDate.getUTCDay()))dueDate.setUTCDate(dueDate.getUTCDate()-1);
   while([0,6].includes(dueDate.getUTCDay()))dueDate.setUTCDate(dueDate.getUTCDate()-1);
   const dueDay=dueDate.toISOString().slice(0,10);
   const receiptDay=obj.captured_at_utc?ymd(parts(new Date(obj.captured_at_utc))):'0000-00-00';
