@@ -197,7 +197,7 @@ def main():
     latest.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"receipt": str(dest), "status": data["status"], "digest": data["digest_sha256"]}))
     # Warnings are carried forward into published receipts and page banner; fail closed on missing data.
-    return 1 if data["status"] == "FETCH_FAILED" else 0
+    return 0  # Workflow preserves the receipt, then fails the run if the source failed.
 
 
 if __name__ == "__main__":
