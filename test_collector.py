@@ -76,3 +76,40 @@ class Tests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FetchRetryTests(unittest.TestCase):
+    def test_fred_urls_request_recent_window_only(self):
+        for k in ("walcl", "rrp"):
+            self.assertIn("&cosd=", collector.URLS[k])
+
+    def test_fetch_retries_then_succeeds(self):
+        calls = []
+        class Resp:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self, n): return b"ok"
+        def fake_urlopen(req, timeout):
+            calls.append(timeout)
+            if len(calls) < 3:
+                raise TimeoutError("The read operation timed out")
+            return Resp()
+        orig = collector.urlopen
+        collector.urlopen = fake_urlopen
+        try:
+            self.assertEqual(collector.fetch("https://example.invalid", wait=0), b"ok")
+        finally:
+            collector.urlopen = orig
+        self.assertEqual(len(calls), 3)
+
+    def test_fetch_raises_last_error_after_all_tries(self):
+        def always_timeout(req, timeout):
+            raise TimeoutError("The read operation timed out")
+        orig = collector.urlopen
+        collector.urlopen = always_timeout
+        try:
+            with self.assertRaises(TimeoutError):
+                collector.fetch("https://example.invalid", wait=0)
+        finally:
+            collector.urlopen = orig

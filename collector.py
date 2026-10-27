@@ -9,6 +9,7 @@ import hashlib
 import io
 import json
 import os
+import time as _time
 from datetime import date, datetime, timedelta, timezone, time
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -19,9 +20,12 @@ from zoneinfo import ZoneInfo
 NY = ZoneInfo("America/New_York")
 FED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id="
 TGA = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance"
+# FRED: request ~400 days only (enough for three aligned observations and the weekly carry-forward);
+# the full 20-year CSV is slow from GitHub runners and timed out on the first hosted run (run 40425518688).
+FRED_START = (date.today() - timedelta(days=400)).isoformat()
 URLS = {
-    "walcl": FED + "WALCL",
-    "rrp": FED + "RRPONTSYD",
+    "walcl": FED + "WALCL&cosd=" + FRED_START,
+    "rrp": FED + "RRPONTSYD&cosd=" + FRED_START,
     "tga": TGA + "?" + urlencode({
         "filter": "account_type:eq:Treasury General Account (TGA) Closing Balance",
         "fields": "record_date,account_type,open_today_bal",
@@ -61,15 +65,24 @@ def status_for(source, latest, now_et):
     return "LATE" if latest < expected_date(source, now_et) else "CURRENT"
 
 
-def fetch(url):
-    request = Request(url, headers={"User-Agent": "Starrkiing-Liquidity-Independent/0.1 (public research collector)"})
-    with urlopen(request, timeout=25) as response:
-        if response.status != 200:
-            raise ValueError(f"HTTP {response.status}")
-        data = response.read(8_000_001)
-        if len(data) > 8_000_000:
-            raise ValueError("source too large")
-        return data
+def fetch(url, tries=3, timeout=90, wait=10):
+    """GET with retries. Three attempts, 90 s each, 10 s then 20 s backoff; the last error is raised."""
+    last = None
+    for attempt in range(tries):
+        try:
+            request = Request(url, headers={"User-Agent": "Starrkiing-Liquidity-Independent/0.1 (public research collector)"})
+            with urlopen(request, timeout=timeout) as response:
+                if response.status != 200:
+                    raise ValueError(f"HTTP {response.status}")
+                data = response.read(8_000_001)
+                if len(data) > 8_000_000:
+                    raise ValueError("source too large")
+                return data
+        except Exception as e:  # network errors and timeouts are retried; the last one is reported
+            last = e
+            if attempt < tries - 1:
+                _time.sleep(wait * (attempt + 1))
+    raise last
 
 
 def parse_fred(raw, series):
