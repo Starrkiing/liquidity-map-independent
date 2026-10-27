@@ -1,0 +1,93 @@
+name: Independent Liquidity Map — public receipts and Pages
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 22 * * 1-5"
+    - cron: "0 23 * * 1-5"
+
+permissions: {contents: read}
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: python -m unittest discover -v
+      - run: python build.py
+
+  collect:
+    needs: tests
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions: {contents: write, pull-requests: write}
+    outputs:
+      collected: ${{ steps.slot.outputs.collected }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Select 18 ET cron by scheduled slot, not actual delayed run
+        id: slot
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          from zoneinfo import ZoneInfo
+          import os
+          now = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
+          required = "0 22 * * 1-5" if now.utcoffset().total_seconds() == -4*3600 else "0 23 * * 1-5"
+          allowed = os.environ["EVENT_NAME"] != "schedule" or os.environ["SCHEDULE"] == required
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("collected=" + str(allowed).lower() + "\n")
+          print("Selected schedule:", required, "run:", allowed)
+          PY
+      - name: Public-source collector
+        if: steps.slot.outputs.collected == 'true'
+        run: python collector.py
+      - name: Build static site
+        if: steps.slot.outputs.collected == 'true'
+        run: python build.py
+      - uses: actions/upload-artifact@v4
+        if: steps.slot.outputs.collected == 'true'
+        with:
+          name: public-source-receipt-${{ github.run_id }}
+          path: |
+            receipts/
+            dist/api/provenance.json
+          retention-days: 30
+      - name: Append receipt by PR, never edit main directly
+        if: steps.slot.outputs.collected == 'true'
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          set -e
+          stamp=$(date -u +%Y%m%dT%H%M%SZ)
+          branch="receipts/$stamp-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add receipts/ dist/api/provenance.json
+          git commit -m "data: append independent source receipt $stamp"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" --title "data: independent receipt $stamp" --body "Append-only source-hashed observation receipt. Review source dates and LATE flags; this is not verified parity with the former ChatGPT Sites deployment." || echo "::warning::PR creation needs Actions permission; receipt branch and run artifact exist"
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.slot.outputs.collected == 'true'
+        with: {path: dist/}
+
+  deploy:
+    needs: collect
+    if: needs.collect.outputs.collected == 'true'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions: {pages: write, id-token: write}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
