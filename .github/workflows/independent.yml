@@ -1,8 +1,6 @@
 name: Independent Liquidity Map — public receipts and Pages
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "0 22 * * 1-5"
@@ -76,6 +74,27 @@ jobs:
           git commit -m "data: append independent source receipt $stamp"
           git push origin "$branch"
           gh pr create --base main --head "$branch" --title "data: independent receipt $stamp" --body "Append-only source-hashed observation receipt. Review source dates and LATE flags; this is not verified parity with the former ChatGPT Sites deployment." || echo "::warning::PR creation needs Actions permission; receipt branch and run artifact exist"
+      - name: Warn on late source observations
+        if: steps.slot.outputs.collected == 'true'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path("dist/api/provenance.json").read_text())
+          print("Data freshness:",p["status"])
+          if p["status"] != "CURRENT":
+              print("::warning::Independent source status is "+p["status"]+"; a green job is not a freshness proof")
+          PY
+      - name: Fail after saving receipt if any required feed is unavailable
+        if: steps.slot.outputs.collected == 'true'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("dist/api/provenance.json").read_text())
+          if p["status"] == "FETCH_FAILED":
+              raise SystemExit("Required public source failed; receipt saved for audit")
+          PY
       - uses: actions/upload-pages-artifact@v3
         if: steps.slot.outputs.collected == 'true'
         with: {path: dist/}
