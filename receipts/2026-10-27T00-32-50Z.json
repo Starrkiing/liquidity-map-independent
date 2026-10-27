@@ -1,0 +1,67 @@
+{
+  "captured_at_utc": "2026-10-27T00:32:49.573996+00:00",
+  "claim": "US research proxy only; not a complete mirror of ChatGPT Sites",
+  "collector": "independent-public-sources-v0.1",
+  "collector_exit_status": "success",
+  "digest_sha256": "79da7c0ec62868e4c69f64dfccfb5008a0daf42db037db01b30ef6cdc09ac222",
+  "omitted_panels": [
+    "SPX dealer gamma",
+    "dark-pool data",
+    "forecast narrative",
+    "ECB/Cboe/BoJ global decomposition (not yet migrated)"
+  ],
+  "schema": 1,
+  "sources": {
+    "rrp": {
+      "expected_through": "2026-10-26",
+      "latest_value": "0.200",
+      "observed_through": "2026-10-26",
+      "sha256": "5dfda22be91bac39ee8e815c79c2b861b3911e9b25f2f1fc9bd740e89c20dfb4",
+      "status": "CURRENT",
+      "unit": "USD billion",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=RRPONTSYD&cosd=2025-09-22"
+    },
+    "tga": {
+      "expected_through": "2026-10-23",
+      "latest_value": "982489",
+      "observed_through": "2026-10-23",
+      "sha256": "06f6ce6e91a80da7c4fcad47c7639278dfc7da913929558568229bf17758fede",
+      "status": "CURRENT",
+      "unit": "USD million",
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance?filter=account_type%3Aeq%3ATreasury+General+Account+%28TGA%29+Closing+Balance&fields=record_date%2Caccount_type%2Copen_today_bal&sort=-record_date&page%5Bsize%5D=100"
+    },
+    "walcl": {
+      "expected_through": "2026-10-21",
+      "latest_value": "6753604",
+      "observed_through": "2026-10-21",
+      "sha256": "82a708267984081093b3936ed7abc16c2863dfd55b0112436e56b91664592c9a",
+      "status": "CURRENT",
+      "unit": "USD million",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL&cosd=2025-09-22"
+    }
+  },
+  "status": "CURRENT",
+  "us_net_liquidity_bn_last3": [
+    {
+      "date": "2026-10-21",
+      "rrp_date": "2026-10-21",
+      "tga_date": "2026-10-21",
+      "us_net_liquidity_bn": "5808.214000",
+      "walcl_date": "2026-10-21"
+    },
+    {
+      "date": "2026-10-22",
+      "rrp_date": "2026-10-22",
+      "tga_date": "2026-10-22",
+      "us_net_liquidity_bn": "5791.494000",
+      "walcl_date": "2026-10-21"
+    },
+    {
+      "date": "2026-10-23",
+      "rrp_date": "2026-10-23",
+      "tga_date": "2026-10-23",
+      "us_net_liquidity_bn": "5770.915000",
+      "walcl_date": "2026-10-21"
+    }
+  ]
+}
