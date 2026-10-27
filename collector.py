@@ -49,7 +49,7 @@ def expected_date(source, now_et):
         # Latest available H.4.1 observation is Wednesday, normally released Thursday 16:30 ET.
         back = (today.weekday() - 2) % 7
         wednesday = today - timedelta(days=back)
-        if today.weekday() < 3 or (today.weekday() == 3 and now_et.time() < time(17)):
+        if today.weekday() == 2 or (today.weekday() == 3 and now_et.time() < time(17)):
             wednesday -= timedelta(days=7)
         return wednesday
     raise ValueError(source)
