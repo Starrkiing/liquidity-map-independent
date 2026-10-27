@@ -70,7 +70,9 @@ def fetch(url, tries=3, timeout=90, wait=10):
     last = None
     for attempt in range(tries):
         try:
-            request = Request(url, headers={"User-Agent": "Starrkiing-Liquidity-Independent/0.1 (public research collector)"})
+            # Default urllib User-Agent: FRED stalled every request carrying the custom collector UA from GitHub
+            # runners (runs 40425518688, 40425778103: 3 x 90 s timeouts), while the default UA is served.
+            request = Request(url)
             with urlopen(request, timeout=timeout) as response:
                 if response.status != 200:
                     raise ValueError(f"HTTP {response.status}")
