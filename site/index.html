@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Liquidity Map — Independent</title>
+  <meta name="description" content="An independent, public-source research proxy for US net liquidity, with source timestamps and cryptographic receipts.">
+  <style>
+    :root{color-scheme:dark;font:15px/1.55 system-ui,sans-serif;background:#0a101a;color:#e9eef5}
+    *{box-sizing:border-box}body{margin:0}main{max-width:920px;margin:auto;padding:40px 20px 80px}
+    h1{font-size:clamp(28px,4vw,42px);letter-spacing:-.04em;line-height:1.2}h2{font-size:20px;margin:32px 0 10px}
+    .eyebrow{color:#95adc8;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+    p,small{color:#b5c2d1}small{display:block}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:25px 0}
+    .metric{border:1px solid #293e52;background:#111c2a;border-radius:12px;padding:16px}
+    .metric .value{font-size:26px;font-variant-numeric:tabular-nums;font-weight:700}
+    .metric label{color:#a1b3c7;font-size:12px;display:block}
+    .status{display:inline-block;border:1px solid #a0b1c0;border-radius:20px;padding:3px 11px;font-weight:700}
+    .status.current{border-color:#4ac6a1;color:#7ae8b2}
+    .status.late,.status.failed{border-color:#ffa064;color:#ffb28f}
+    table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+    th,td{border-bottom:1px solid #263746;padding:10px 8px;text-align:left;vertical-align:top}
+    th{font-weight:500;color:#97adc1}a{color:#80c5ff}code{word-break:break-all;font-size:12px}
+    .note{border-left:3px solid #6487ae;padding:10px 14px;background:#121f2d}
+  </style>
+</head>
+<body><main>
+  <div class="eyebrow">Public data · Independent calculation · No Claude feed</div>
+  <h1>Liquidity Map — Independent</h1>
+  <p>US net liquidity research proxy: Federal Reserve total assets minus Treasury General Account minus overnight reverse repos. Source freshness and collection success are separate.</p>
+  <div id="status" class="status">UNVERIFIED</div>
+  <div class="metrics">
+    <div class="metric"><label>Latest observed date</label><div id="date" class="value">—</div></div>
+    <div class="metric"><label>US net liquidity · USD bn</label><div id="net" class="value">—</div></div>
+    <div class="metric"><label>Collection time (UTC)</label><div id="built" class="value" style="font-size:17px">—</div></div>
+  </div>
+  <h2>Source freshness</h2>
+  <table><thead><tr><th>Source</th><th>Observed through</th><th>Expected through</th><th>Status</th></tr></thead>
+  <tbody id="sources"><tr><td colspan="4">No verified published receipt.</td></tr></tbody></table>
+  <h2>Three most recent observed values</h2>
+  <table><thead><tr><th>Date</th><th>Net liquidity · USD bn</th><th>WALCL as-of</th><th>RRP as-of</th></tr></thead>
+  <tbody id="history"><tr><td colspan="4">No data available.</td></tr></tbody></table>
+  <h2>Evidence and limitations</h2>
+  <p>Receipt SHA-256: <code id="sha">—</code>. <a href="./api/provenance.json">Read the machine-readable provenance</a>.</p>
+  <p class="note"><strong>Not included:</strong> dealer gamma, dark-pool activity, forecast narrative, or a validated global/ECB/Cboe/BoJ decomposition. This initial GitHub implementation is not yet the same feature set or verified identical source commit as the earlier ChatGPT Sites dashboard. There is no trading signal or investment recommendation.</p>
+  <p>Method: WALCL and DTS TGA (USD millions) / 1,000, less RRPONTSYD (USD billions), using each available observation at or before the displayed date. Latest values may carry forward different dates. A successful job does not erase a LATE or FETCH_FAILED data flag.</p>
+  <small>Open-source research prototype · <a href="https://github.com/Starrkiing/liquidity-map-independent">Code and issue history</a></small>
+</main>
+<script>
+const el=id=>document.getElementById(id);
+function cell(tr,val){const td=document.createElement('td');td.textContent=String(val??'—');tr.append(td);}
+function renderTable(id,items,cols){const body=el(id);body.replaceChildren();for(const item of items){const tr=document.createElement('tr');for(const k of cols)cell(tr,item[k]);body.append(tr);}}
+(async()=>{
+ try {
+  const response=await fetch('./api/provenance.json',{cache:'no-store'});
+  if(!response.ok)throw Error('Receipt unavailable, HTTP '+response.status);
+  const obj=await response.json();
+  const s=String(obj.status||'UNVERIFIED');
+  el('status').textContent=s;
+  el('status').className='status '+(s==='CURRENT'?'current':'late');
+  el('built').textContent=obj.captured_at_utc||'—';
+  el('sha').textContent=obj.digest_sha256||'—';
+  const records=obj.us_net_liquidity_bn_last3||[];
+  const latest=records.length?records[records.length-1]:null;
+  el('date').textContent=latest?.date||'—';
+  el('net').textContent=latest?.us_net_liquidity_bn||'—';
+  const sources=Object.entries(obj.sources||{}).map(([name,x])=>({name,...x}));
+  renderTable('sources',sources,['name','observed_through','expected_through','status']);
+  renderTable('history',records,['date','us_net_liquidity_bn','walcl_date','rrp_date']);
+ }catch(err){
+  el('status').textContent='UNVERIFIED — '+err.message;
+  el('status').className='status failed';
+ }
+})();
+</script></body></html>
